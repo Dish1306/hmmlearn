@@ -115,8 +115,7 @@ jobs:
                     "${PYBIN}/pip" install --upgrade pip setuptools wheel && \
                     "${PYBIN}/pip" install -ve . && \
                     "${PYBIN}/pip" install pytest pytest-cov && \
-                    "${PYBIN}/python" -mpytest --junitxml=junit/test-results.xml --cov && \
-                    "${PYBIN}/python" setup.py bdist_wheel --verbose && \
+                    "${PYBIN}/python" setup.py bdist_wheel && \
                     auditwheel repair wheelhouse/hmmlearn*.whl --plat manylinux2014_aarch64 -w wheelhouse-manylinux"
       displayName: 'Running AArch64 build'
       env:
