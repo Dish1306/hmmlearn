@@ -38,7 +38,7 @@ jobs:
         Windows_py36:
           vmImage: 'windows-2019'
           pythonVersion: '3.6'
-       Windows_py37:
+        Windows_py37:
           vmImage: 'windows-2019'
           pythonVersion: '3.7'
         Windows_py38:
