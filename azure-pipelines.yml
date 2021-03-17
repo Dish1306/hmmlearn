@@ -1,112 +1,152 @@
-strategy:
-  matrix:
-    Linux_py35:
-      vmImage: 'ubuntu-16.04'
-      pythonVersion: '3.5'
-    Linux_py36:
-      vmImage: 'ubuntu-16.04'
-      pythonVersion: '3.6'
-    Linux_py37:
-      vmImage: 'ubuntu-16.04'
-      pythonVersion: '3.7'
-    Linux_py38:
-      vmImage: 'ubuntu-16.04'
-      pythonVersion: '3.8'
-    Linux_py39:
-      vmImage: 'ubuntu-16.04'
-      pythonVersion: '3.9'
-    macOS_py35:
-      vmImage: 'macOS-10.14'
-      pythonVersion: '3.5'
-    macOS_py36:
-      vmImage: 'macOS-10.14'
-      pythonVersion: '3.6'
-    macOS_py37:
-      vmImage: 'macOS-10.14'
-      pythonVersion: '3.7'
-    macOS_py38:
-      vmImage: 'macOS-10.14'
-      pythonVersion: '3.8'
-    macOS_py39:
-      vmImage: 'macOS-10.14'
-      pythonVersion: '3.9'
-    Windows_py35:
-      vmImage: 'windows-2019'
-      pythonVersion: '3.5'
-    Windows_py36:
-      vmImage: 'windows-2019'
-      pythonVersion: '3.6'
-    Windows_py37:
-      vmImage: 'windows-2019'
-      pythonVersion: '3.7'
-    Windows_py38:
-      vmImage: 'windows-2019'
-      pythonVersion: '3.8'
-    Windows_py39:
-      vmImage: 'windows-2019'
-      pythonVersion: '3.9'
+jobs:
+  - job: WindowsBuild
+    strategy:
+      matrix:
+        Linux_py35:
+          vmImage: 'ubuntu-16.04'
+          pythonVersion: '3.5'
+        Linux_py36:
+          vmImage: 'ubuntu-16.04'
+          pythonVersion: '3.6'
+        Linux_py37:
+          vmImage: 'ubuntu-16.04'
+          pythonVersion: '3.7'
+        Linux_py38:
+          vmImage: 'ubuntu-16.04'
+          pythonVersion: '3.8'
+        Linux_py39:
+          vmImage: 'ubuntu-16.04'
+          pythonVersion: '3.9'
+        macOS_py35:
+          vmImage: 'macOS-10.14'
+          pythonVersion: '3.5'
+        macOS_py36:
+          vmImage: 'macOS-10.14'
+          pythonVersion: '3.6'
+        macOS_py37:
+          vmImage: 'macOS-10.14'
+          pythonVersion: '3.7'
+        macOS_py38:
+          vmImage: 'macOS-10.14'
+          pythonVersion: '3.8'
+        macOS_py39:
+          vmImage: 'macOS-10.14'
+          pythonVersion: '3.9'
+        Windows_py35:
+          vmImage: 'windows-2019'
+          pythonVersion: '3.5'
+        Windows_py36:
+          vmImage: 'windows-2019'
+          pythonVersion: '3.6'
+       Windows_py37:
+          vmImage: 'windows-2019'
+          pythonVersion: '3.7'
+        Windows_py38:
+          vmImage: 'windows-2019'
+          pythonVersion: '3.8'
+        Windows_py39:
+          vmImage: 'windows-2019'
+          pythonVersion: '3.9'
 
-pool:
-  vmImage: '$(vmImage)'
+    pool:
+      vmImage: '$(vmImage)'
 
-steps:
+    steps:
 
-- task: UsePythonVersion@0
-  inputs:
-    versionSpec: '$(pythonVersion)'
-    architecture: 'x64'
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '$(pythonVersion)'
+        architecture: 'x64'
 
-- bash: |
-    python -mpip install --upgrade pip setuptools wheel &&
-      python -mpip install -ve . &&
-      python -mpip install pytest pytest-cov
-  displayName: 'Build & install'
+    - bash: |
+        python -mpip install --upgrade pip setuptools wheel &&
+          python -mpip install -ve . &&
+          python -mpip install pytest pytest-cov
+      displayName: 'Build & install'
 
-- bash: |
-    python -mpytest --junitxml=junit/test-results.xml --cov
-  displayName: 'Test'
+    - bash: |
+        python -mpytest --junitxml=junit/test-results.xml --cov
+      displayName: 'Test'
 
-- task: PublishTestResults@2
-  inputs:
-    testResultsFiles: '**/test-results.xml'
-    testRunTitle: 'Python $(pythonVersion) / $(vmImage)'
-  condition: succeededOrFailed()
+    - task: PublishTestResults@2
+      inputs:
+        testResultsFiles: '**/test-results.xml'
+        testRunTitle: 'Python $(pythonVersion) / $(vmImage)'
+      condition: succeededOrFailed()
 
-- bash: |
-    case "$(python -c 'import sys; print(sys.platform)')" in
-    win32)
-      choco install codecov
-      codecov -f .coverage
-      ;;
-    *)
-      bash <(curl -s https://codecov.io/bash)
-      ;;
-    esac
-  displayName: 'Upload to codecov.io'
+    - bash: |
+        case "$(python -c 'import sys; print(sys.platform)')" in
+        win32)
+          choco install codecov
+          codecov -f .coverage
+          ;;
+        *)
+          bash <(curl -s https://codecov.io/bash)
+          ;;
+        esac
+      displayName: 'Upload to codecov.io'
 
-- bash: |
-    git clean -xdf &&
-    case "$(python -c 'import sys; print(sys.platform)')" in
-    linux)
-      PV="${PYTHONVERSION/./}" &&
-      ABI="$(python -c "import sys; print(sys.abiflags)")" &&
-      docker run --interactive --volume="$(pwd)":/io:Z --workdir=/io \
-        quay.io/pypa/manylinux1_x86_64 bash <<EOF
-    /opt/python/cp"$PV"-cp"$PV$ABI"/bin/python setup.py bdist_wheel --verbose
-    auditwheel --verbose repair --wheel-dir=/io/dist /io/dist/\*.whl
-    EOF
-      ;;
-    *)
-      python setup.py bdist_wheel
-      ;;
-    esac
-    cp -v dist/*.whl "$BUILD_ARTIFACTSTAGINGDIRECTORY"
-  displayName: 'Build & upload wheels'
+    - bash: |
+        git clean -xdf &&
+        case "$(python -c 'import sys; print(sys.platform)')" in
+        linux)
+          PV="${PYTHONVERSION/./}" &&
+          ABI="$(python -c "import sys; print(sys.abiflags)")" &&
+          docker run --interactive --volume="$(pwd)":/io:Z --workdir=/io \
+            quay.io/pypa/manylinux1_x86_64 bash <<EOF
+        /opt/python/cp"$PV"-cp"$PV$ABI"/bin/python setup.py bdist_wheel --verbose
+        auditwheel --verbose repair --wheel-dir=/io/dist /io/dist/\*.whl
+        EOF
+          ;;
+        *)
+          python setup.py bdist_wheel
+          ;;
+        esac
+        cp -v dist/*.whl "$BUILD_ARTIFACTSTAGINGDIRECTORY"
+      displayName: 'Build & upload wheels'
 
-- task: PublishBuildArtifacts@1
-  inputs:
-    artifactName: 'wheels'
+    - task: PublishBuildArtifacts@1
+      inputs:
+        artifactName: 'wheels'
 
-- task: DownloadBuildArtifacts@0
-  inputs:
-    artifactName: 'wheels'
+    - task: DownloadBuildArtifacts@0
+      inputs:
+        artifactName: 'wheels'
+        
+  
+  - job: AArch64_Manylinux2014Build
+    pool:
+      vmImage: 'ubuntu-18.04'
+    strategy:
+      matrix:
+        Py36 Arm64:
+          python.version: 'cp36-cp36m'
+          manylinux: 'manylinux_aarch64'
+        Py37 Arm64:
+          python.version: 'cp37-cp37m'
+          manylinux: 'manylinux_aarch64'
+        Py38 Arm64:
+          python.version: 'cp38-cp38'
+          manylinux: 'manylinux_aarch64'
+        Py39 Arm64:
+          python.version: 'cp39-cp39'
+          manylinux: 'manylinux_aarch64'
+    steps:
+    - script: docker run --rm --privileged hypriot/qemu-register
+      displayName: 'Registering qemu'
+    - script: |
+        docker run -v $(pwd):"${DOCKER_ROOT_DIRECTORY}":rw,z \
+                   -e HOST_USER_ID \
+                    "quay.io/pypa/manylinux2014_aarch64:latest" \
+                    bash -c "cd $DOCKER_ROOT_DIRECTORY;
+                    "${PYBIN}/pip" install --upgrade pip setuptools wheel && \
+                    "${PYBIN}/pip" install -ve . && \
+                    "${PYBIN}/pip" install pytest pytest-cov && \
+                    "${PYBIN}/python" -mpytest --junitxml=junit/test-results.xml --cov && \
+                    "${PYBIN}/python" setup.py bdist_wheel --verbose && \
+                    auditwheel repair wheelhouse/hmmlearn*.whl --plat manylinux2014_aarch64 -w wheelhouse-manylinux"
+      displayName: 'Running AArch64 build'
+      env:
+        DOCKER_ROOT_DIRECTORY: "/home/source_root"
+        HOST_USER_ID: $(id -u)
+        PYBIN: /opt/python/$(python.version)/bin
